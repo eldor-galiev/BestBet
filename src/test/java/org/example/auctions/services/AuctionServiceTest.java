@@ -69,7 +69,7 @@ public class AuctionServiceTest {
     @Test
     public void validateDeleteAuctionThrowsExceptionWhenAuctionIdNotFound() {
         RuntimeException expectedException = assertThrows(RuntimeException.class, () -> {
-            auctionService.deleteAuction("non-existent Id");
+            auctionService.deleteAuction(null);
         });
         assertEquals("There is no such Auction Id.", expectedException.getMessage());
     }
@@ -105,7 +105,7 @@ public class AuctionServiceTest {
     @Test
     public void validateUpdateAuctionThrowsExceptionWhenAuctionIdNotFound() {
         RuntimeException expectedException = assertThrows(RuntimeException.class, () -> {
-            auctionService.updateAuction("non-existent Id", "Iphone", AuctionType.INC, 200, AuctionDuration.H2);
+            auctionService.updateAuction(null, "Iphone", AuctionType.INC, 200, AuctionDuration.H2);
         });
         assertEquals("There is no such Auction Id.", expectedException.getMessage());
     }

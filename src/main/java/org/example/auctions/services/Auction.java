@@ -1,6 +1,5 @@
 package org.example.auctions.services;
 
-import java.sql.*;
 import java.util.*;
 import org.example.auctions.services.types.AuctionDuration;
 import org.example.auctions.services.types.AuctionStatus;
@@ -17,9 +16,8 @@ public class Auction {
     private String winnerBidId;
     private AuctionStatus auctionStatus;
 
-
-    public Auction(Long id, String subject, AuctionType auctionType, Integer price, AuctionDuration auctionDuration, String ownerName) {
-        this.id = id;
+    public Auction(String subject, AuctionType auctionType, Integer price, AuctionDuration auctionDuration, String ownerName) {
+        this.id = null;
         this.subject = subject;
         this.auctionType = auctionType;
         this.price = price;
@@ -27,6 +25,18 @@ public class Auction {
         this.ownerName = ownerName;
         this.bids = new ArrayList<>();
         this.auctionStatus = AuctionStatus.UNPUBLISHED;
+    }
+
+    public Auction(Long id, Auction auction) {
+        this.id = id;
+        this.subject = auction.getSubject();
+        this.auctionType = auction.getType();
+        this.price = auction.getPrice();
+        this.auctionDuration = auction.getDuration();
+        this.ownerName = auction.getOwnerName();
+        this.bids = auction.getBids();
+        this.winnerBidId = auction.getWinnerBidId();
+        this.auctionStatus = getStatus();
     }
 
     public Auction(Long id, String subject, AuctionType auctionType, Integer price, AuctionDuration auctionDuration, String ownerName, String winnerBidId, AuctionStatus auctionStatus) {
