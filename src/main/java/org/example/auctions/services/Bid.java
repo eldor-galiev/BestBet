@@ -5,12 +5,12 @@ import java.util.UUID;
 
 public class Bid {
     private final String id;
-    private final String auctionId;
+    private final Long auctionId;
     private final String ownerName;
     private final Integer amount;
     private final LocalDateTime createdAt;
 
-    public Bid(String ownerName, String auctionId, Integer amount) {
+    public Bid(String ownerName, Long auctionId, Integer amount) {
         this.id = UUID.randomUUID().toString();
         this.auctionId = auctionId;
         this.ownerName = ownerName;
@@ -26,7 +26,7 @@ public class Bid {
         return ownerName;
     }
 
-    public String getAuctionId() {
+    public Long getAuctionId() {
         return auctionId;
     }
 

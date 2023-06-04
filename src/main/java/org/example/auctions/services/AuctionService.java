@@ -1,81 +1,97 @@
 package org.example.auctions.services;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
 
-public class AuctionService {
-    private final Map<String, Auction> auctionsCache;
 
-    public AuctionService() {
-        this.auctionsCache = new HashMap<>();
+import org.example.auctions.repositories.AuctionRepository;
+import org.example.auctions.services.types.AuctionDuration;
+import org.example.auctions.services.types.AuctionStatus;
+import org.example.auctions.services.types.AuctionType;
+
+public class AuctionService {
+    private final AuctionRepository auctionRepository;
+
+    public AuctionService(AuctionRepository auctionRepository) {
+        this.auctionRepository = auctionRepository;
     }
 
-    public Auction createAuction(String subject, type type, Integer price, duration duration, String ownerName) {
+    public Long createAuction(String subject, AuctionType auctionType, Integer price, AuctionDuration auctionDuration, String ownerName) {
         if (price <= 0) {
             throw new RuntimeException("Price is less than zero.");
         }
-        Auction auction = new Auction(subject, type, price, duration, ownerName);
-        this.auctionsCache.put(auction.getId(), auction);
-        return auction;
+        Auction auction = new Auction(subject, auctionType, price, auctionDuration, ownerName);
+        var auctionId = auctionRepository.addAuction(auction);
+        return auctionId;
     }
 
-    public void publishAuction(String id) {
-        this.auctionsCache.get(id).publish();
-    }
-
-    public void deleteAuction(String id) {
-        this.auctionsCache.get(id).delete();
-    }
-
-    public void updateAuction(String id, String newSubject, type newType, Integer newPrice, duration newDuration) {
-        if (this.auctionsCache.get(id) == null) {
-            throw new RuntimeException("There is no such Auction Id.");
+    public void deleteAuction(Long auctionId) {
+        Auction auction = auctionRepository.getAuctionById(auctionId);
+        if (auction.getStatus() == AuctionStatus.DELETED) {
+            throw new RuntimeException("The auction has already been deleted.");
         }
-        if (this.auctionsCache.get(id).getStatus() == status.PUBLISHED) {
+        if (auction.getStatus() == AuctionStatus.COMPLETED) {
+            throw new RuntimeException("The auction has already been completed.");
+        }
+        auctionRepository.deleteAuction(auctionId);
+    }
+
+    public void updateAuction(Long auctionId, String newSubject, AuctionType newType, Integer newPrice, AuctionDuration newDuration) {
+        Auction auction = auctionRepository.getAuctionById(auctionId);
+        if (auction.getStatus() == AuctionStatus.PUBLISHED) {
             throw new RuntimeException("The auction is published, it cannot be updated.");
         }
-        if (this.auctionsCache.get(id).getStatus() == status.DELETED) {
+        if (auction.getStatus() == AuctionStatus.DELETED) {
             throw new RuntimeException("The auction is deleted, it cannot be updated.");
         }
-        this.auctionsCache.get(id).setSubject(newSubject);
-        this.auctionsCache.get(id).setType(newType);
-        this.auctionsCache.get(id).setPrice(newPrice);
-        this.auctionsCache.get(id).setDuration(newDuration);
+        auction.setSubject(newSubject);
+        auction.setType(newType);
+        auction.setPrice(newPrice);
+        auction.setDuration(newDuration);
+        auctionRepository.updateAuction(auctionId, auction);
     }
 
-    public Bid createBid(String ownerName, String auctionId, Integer amount) {
-        if (this.auctionsCache.get(auctionId) == null) {
-            throw new RuntimeException("There is no such Auction Id.");
+    public void publishAuction(Long auctionId) {
+        Auction auction = auctionRepository.getAuctionById(auctionId);
+        if (auction.getStatus() == AuctionStatus.PUBLISHED) {
+            throw new RuntimeException("The auction has already been published.");
         }
-        Auction auction = this.auctionsCache.get(auctionId);
+        if (auction.getStatus() == AuctionStatus.DELETED) {
+            throw new RuntimeException("The auction has already been deleted.");
+        }
+        if (auction.getStatus() == AuctionStatus.COMPLETED) {
+            throw new RuntimeException("The auction has already been completed.");
+        }
+        auction.publish();
+        auctionRepository.updateAuction(auctionId, auction);
+    }
+
+    public Bid createBid(String ownerName, Long auctionId, Integer amount) {
+        Auction auction = auctionRepository.getAuctionById(auctionId);
         if (auction.getBids().size() == 0) {
-            if (auction.getType() == type.INC && auction.getPrice() > amount) {
+            if (auction.getType() == AuctionType.INC && auction.getPrice() > amount) {
                 throw new RuntimeException("The bid amount must be greater than the specified price.");
             }
-            if (auction.getType() == type.DEC && auction.getPrice() < amount) {
+            if (auction.getType() == AuctionType.DEC && auction.getPrice() < amount) {
                 throw new RuntimeException("The bid amount must be less than the specified price.");
             }
         }
         else {
-            if (auction.getType() == type.INC && auction.getBids().get(auction.getBids().size() - 1).getAmount() > amount) {
+            if (auction.getType() == AuctionType.INC && auction.getBids().get(auction.getBids().size() - 1).getAmount() > amount) {
                 throw new RuntimeException("The bid amount must be greater than the previous bid.");
             }
-            if (auction.getType() == type.DEC && auction.getBids().get(auction.getBids().size() - 1).getAmount() < amount) {
+            if (auction.getType() == AuctionType.DEC && auction.getBids().get(auction.getBids().size() - 1).getAmount() < amount) {
                 throw new RuntimeException("The bid amount must be less than the previous bid.");
             }
         }
         Bid bid = new Bid(ownerName, auctionId, amount);
-        this.auctionsCache.get(auctionId).getBids().add(bid);
+        auction.getBids().add(bid);
         return bid;
     }
 
-    public void cancelBid(String auctionId, String bidId) {
-        if (this.auctionsCache.get(auctionId) == null) {
-            throw new RuntimeException("There is no such Auction Id.");
-        }
-        ArrayList<Bid> bids = auctionsCache.get(auctionId).getBids();
+    public void cancelBid(Long auctionId, String bidId) {
+        Auction auction = auctionRepository.getAuctionById(auctionId);
+        ArrayList<Bid> bids = auction.getBids();
         int bidIndex = -1;
         for (int i = 0; i < bids.size(); i++) {
             if (Objects.equals(bids.get(i).getId(), bidId)) {
@@ -84,7 +100,7 @@ public class AuctionService {
             }
         }
         if (bidIndex >= 0) {
-            auctionsCache.get(auctionId).getBids().remove(bidIndex);
+            bids.remove(bidIndex);
         }
         else {
             throw new RuntimeException("There is no such Bid Id.");
