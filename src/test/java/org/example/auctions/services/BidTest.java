@@ -9,7 +9,7 @@ class BidTest {
     public void verifyCreateBid() {
         Bid bid = new Bid("Shamil", 1L, 600);
         assertEquals("Shamil", bid.getOwnerName());
-        assertEquals("auctionId", bid.getAuctionId());
+        assertEquals(1L, bid.getAuctionId());
         assertNotNull(bid.getDuration());
         assertEquals(600, bid.getAmount());
     }

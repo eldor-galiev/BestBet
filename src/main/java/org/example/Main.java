@@ -1,11 +1,15 @@
 package org.example;
 
 import org.example.auctions.repositories.AuctionRepository;
+import org.example.auctions.services.Auction;
 import org.example.auctions.services.AuctionService;
+import org.example.auctions.services.types.AuctionDuration;
+import org.example.auctions.services.types.AuctionType;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.ArrayList;
 
 public class Main {
     public static void main(String[] args) {
@@ -13,9 +17,7 @@ public class Main {
         try (Connection conn = DriverManager.getConnection(connectionUrl, "root", "eldor1512")) {
             AuctionRepository auctionRepository = new AuctionRepository(conn);
             AuctionService auctionService = new AuctionService(auctionRepository);
-//            Long newAuctionId = auctionService.createAuction("Android", AuctionType.INC, 500, AuctionDuration.H2, "Eldor");
-//            auctionService.updateAuction(newAuctionId, "Car", AuctionType.DEC, 200, AuctionDuration.H1);
-//            auctionService.deleteAuction(newAuctionId);
+            auctionService.publishAuction(26L);
         } catch (SQLException e) {
             System.err.println(e);
         }

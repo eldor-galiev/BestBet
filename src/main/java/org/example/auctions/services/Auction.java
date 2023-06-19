@@ -87,28 +87,48 @@ public class Auction {
         return auctionStatus;
     }
 
-    public void publish() {
-        this.auctionStatus = AuctionStatus.PUBLISHED;
-    }
-
-    public void delete() {
-        this.auctionStatus = AuctionStatus.DELETED;
-    }
-
     public void setSubject(String newSubject) {
-        this.subject = newSubject;
+        subject = newSubject;
     }
 
     public void setType(AuctionType newType) {
-        this.auctionType = newType;
+        auctionType = newType;
     }
 
     public void setPrice(Integer newPrice) {
-        this.price = newPrice;
+        price = newPrice;
     }
 
     public void setDuration(AuctionDuration newDuration) {
-        this.auctionDuration = newDuration;
+        auctionDuration = newDuration;
     }
 
+    public void publish() {
+        auctionStatus = AuctionStatus.PUBLISHED;
+    }
+
+    public void delete() {
+        auctionStatus = AuctionStatus.DELETED;
+    }
+
+    public void complete() {
+        auctionStatus = AuctionStatus.COMPLETED;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        Auction auction = (Auction) obj;
+        return id == auction.id &&
+                Objects.equals(subject, auction.getSubject()) && Objects.equals(auctionType, auction.getType()) &&
+                Objects.equals(auctionDuration, auction.getDuration()) && Objects.equals(price, auction.getPrice()) &&
+                Objects.equals(ownerName, auction.getOwnerName()) && Objects.equals(auctionStatus, auction.getStatus()) &&
+                Objects.equals(winnerBidId, auction.getWinnerBidId()) && Objects.equals(bids, auction.getBids());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(subject, auctionType, price, auctionDuration, ownerName, winnerBidId, auctionStatus, winnerBidId, bids);
+    }
 }

@@ -20,9 +20,10 @@ public class AuctionService {
         if (price <= 0) {
             throw new RuntimeException("Price is less than zero.");
         }
+
         Auction auction = new Auction(subject, auctionType, price, auctionDuration, ownerName);
-        var auctionId = auctionRepository.addAuction(auction);
-        return auctionId;
+
+        return auctionRepository.addAuction(auction);
     }
 
     public void deleteAuction(Long auctionId) {
@@ -33,6 +34,7 @@ public class AuctionService {
         if (auction.getStatus() == AuctionStatus.COMPLETED) {
             throw new RuntimeException("The auction has already been completed.");
         }
+
         auctionRepository.deleteAuction(auctionId);
     }
 
@@ -44,10 +46,15 @@ public class AuctionService {
         if (auction.getStatus() == AuctionStatus.DELETED) {
             throw new RuntimeException("The auction is deleted, it cannot be updated.");
         }
+        if (auction.getStatus() == AuctionStatus.COMPLETED) {
+            throw new RuntimeException("The auction is completed, it cannot be updated.");
+        }
+
         auction.setSubject(newSubject);
         auction.setType(newType);
         auction.setPrice(newPrice);
         auction.setDuration(newDuration);
+
         auctionRepository.updateAuction(auctionId, auction);
     }
 
@@ -62,7 +69,9 @@ public class AuctionService {
         if (auction.getStatus() == AuctionStatus.COMPLETED) {
             throw new RuntimeException("The auction has already been completed.");
         }
+
         auction.publish();
+
         auctionRepository.updateAuction(auctionId, auction);
     }
 

@@ -18,9 +18,10 @@ public class AuctionRepository {
     public Auction getAuctionById(Long auctionId) {
         try {
             connection.setAutoCommit(false);
-            Statement statement = connection.createStatement();
-            String sql = ("SELECT * FROM auctions " + "where id ='" + auctionId + "';");
-            ResultSet resultSet = statement.executeQuery(sql);
+            String sql = ("SELECT * FROM auctions where id = ?");
+            PreparedStatement statement = connection.prepareStatement(sql);
+            statement.setLong(1, auctionId);
+            ResultSet resultSet = statement.executeQuery();
             if (resultSet.next()) {
                 Long id = resultSet.getLong("id");
                 String subject = resultSet.getString("subject");
@@ -53,9 +54,9 @@ public class AuctionRepository {
         try {
             connection.setAutoCommit(false);
             Statement statement = connection.createStatement();
-            String sql = ("SELECT * FROM auctions ;");
+            String sql = ("SELECT * FROM auctions");
             ResultSet resultSet = statement.executeQuery(sql);
-            ArrayList <Auction> auctions = new ArrayList<Auction>();
+            ArrayList<Auction> auctions = new ArrayList<>();
             while (resultSet.next()) {
                 Long id = resultSet.getLong("id");
                 String subject = resultSet.getString("subject");
@@ -86,8 +87,17 @@ public class AuctionRepository {
     public Long addAuction(Auction auction) {
         try {
             connection.setAutoCommit(false);
-            PreparedStatement statement = connection.prepareStatement("INSERT into auctions (subject, auction_type, price, auction_duration, owner_name, winner_bid_id, auction_status)" +
-                    "values ('" + auction.getSubject() + "', '" + auction.getType() + "', " + auction.getPrice() + ", '" + auction.getDuration() + "', '" + auction.getOwnerName() + "', " + null + ", '" + auction.getStatus() + "')", Statement.RETURN_GENERATED_KEYS);
+            String sql = "INSERT into auctions" +
+                    "(subject, auction_type, price, auction_duration, owner_name, winner_bid_id, auction_status)" +
+                    "values (?, ?, ?, ?, ?, ?, ?)";
+            PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            statement.setString(1, auction.getSubject());
+            statement.setString(2, auction.getType().toString());
+            statement.setInt(3, auction.getPrice());
+            statement.setString(4, auction.getDuration().toString());
+            statement.setString(5, auction.getOwnerName());
+            statement.setString(6, auction.getWinnerBidId());
+            statement.setString(7, auction.getStatus().toString());
             statement.executeUpdate();
             ResultSet keys = statement.getGeneratedKeys();
             keys.next();
@@ -111,7 +121,10 @@ public class AuctionRepository {
     public void deleteAuction(Long auctionId) {
         try {
             connection.setAutoCommit(false);
-            PreparedStatement statement = connection.prepareStatement("UPDATE Auctions set auction_status = '" + AuctionStatus.DELETED + "' where id ='" + auctionId + "';");
+            String sql = "UPDATE Auctions set auction_status = ? where id = ?;";
+            PreparedStatement statement = connection.prepareStatement(sql);
+            statement.setString(1, AuctionStatus.DELETED.toString());
+            statement.setLong(2, auctionId);
             statement.executeUpdate();
             connection.commit();
         } catch (SQLException exception) {
@@ -131,8 +144,14 @@ public class AuctionRepository {
     public void updateAuction(Long auctionId, Auction auction) {
         try {
             connection.setAutoCommit(false);
-            PreparedStatement statement = connection.prepareStatement("UPDATE Auctions set subject = '" + auction.getSubject() + "', " + "auction_type = '" + auction.getType() + "', "
-                    + "price = '" + auction.getPrice() + "', " + "auction_duration = '" + auction.getDuration() + "'" + "where id ='" + auctionId + "';");
+            String sql = "UPDATE Auctions set subject = ?, auction_type = ?, price = ?, auction_duration = ?, auction_status = ? where id = ?;";
+            PreparedStatement statement = connection.prepareStatement(sql);
+            statement.setString(1, auction.getSubject());
+            statement.setString(2, auction.getType().toString());
+            statement.setInt(3, auction.getPrice());
+            statement.setString(4, auction.getDuration().toString());
+            statement.setString(5, auction.getStatus().toString());
+            statement.setLong(6, auctionId);
             statement.executeUpdate();
             connection.commit();
         } catch (SQLException exception) {
@@ -148,5 +167,4 @@ public class AuctionRepository {
             throw new RuntimeException("Auction update operation failed");
         }
     }
-
 }
