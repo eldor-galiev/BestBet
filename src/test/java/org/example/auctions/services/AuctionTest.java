@@ -11,7 +11,6 @@ class AuctionTest {
     @Test
     public void verifyCreateAuction() {
         Auction auction = new Auction("Android", AuctionType.INC, 600, AuctionDuration.H2, "Eldor");
-        assertNotNull(auction.getId());
         assertEquals("Android", auction.getSubject());
         assertEquals(AuctionType.INC, auction.getType());
         assertEquals(600, auction.getPrice());

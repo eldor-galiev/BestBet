@@ -1,152 +1,80 @@
 package org.example.auctions.repositories;
 
-import org.example.auctions.services.Auction;
-import org.example.auctions.services.types.AuctionDuration;
-import org.example.auctions.services.types.AuctionStatus;
-import org.example.auctions.services.types.AuctionType;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.TypedQuery;
+import lombok.AllArgsConstructor;
+import org.example.auctions.domain.entity.AuctionEntity;
+import org.example.auctions.domain.Auction;
+import org.example.auctions.types.AuctionStatus;
+import org.springframework.stereotype.Repository;
 
-import java.sql.*;
-import java.util.ArrayList;
+import java.util.List;
 
-public class AuctionRepository {
-    private final Connection connection;
+@Repository
+@AllArgsConstructor
+public class AuctionRepository{
 
-    public AuctionRepository(Connection connection) {
-        this.connection = connection;
-    }
+    @PersistenceContext
+    protected EntityManager em;
 
     public Auction getAuctionById(Long auctionId) {
-        try {
-            connection.setAutoCommit(false);
-            Statement statement = connection.createStatement();
-            String sql = ("SELECT * FROM auctions " + "where id ='" + auctionId + "';");
-            ResultSet resultSet = statement.executeQuery(sql);
-            if (resultSet.next()) {
-                Long id = resultSet.getLong("id");
-                String subject = resultSet.getString("subject");
-                AuctionType auctionType = AuctionType.valueOf(resultSet.getString("auction_type"));
-                Integer price = resultSet.getInt("price");
-                AuctionDuration auctionDuration = AuctionDuration.valueOf(resultSet.getString("auction_duration"));
-                String ownerName = resultSet.getString("owner_name");
-                String winnerBidId = resultSet.getString("winner_bid_id");
-                AuctionStatus auctionStatus = AuctionStatus.valueOf(resultSet.getString("auction_status"));
-                Auction auction = new Auction(id, subject, auctionType, price, auctionDuration, ownerName, winnerBidId, auctionStatus);
-                return auction;
-            } else {
-                throw new RuntimeException("There is no auction with such id in the auctions database.");
-            }
-        } catch (SQLException exception) {
-            System.err.println(exception);
-            if (connection != null) {
-                try {
-                    System.err.print("Transaction is being rolled back");
-                    connection.rollback();
-                } catch (SQLException exp) {
-                    System.err.println(exp);
-                }
-            }
-            throw new RuntimeException("Getting the auction by id from database operation failed");
-        }
+        String sql = "select t from " + AuctionEntity.class.getCanonicalName() + " t where t.id = :id";
+        TypedQuery<AuctionEntity> list = em.createQuery(sql, AuctionEntity.class)
+                .setParameter("id", auctionId);
+        return list.getResultList().stream().map(this::transformEntityToObject).toList().get(0);
     }
 
-    public ArrayList <Auction> getAllAuctions() {
-        try {
-            connection.setAutoCommit(false);
-            Statement statement = connection.createStatement();
-            String sql = ("SELECT * FROM auctions ;");
-            ResultSet resultSet = statement.executeQuery(sql);
-            ArrayList <Auction> auctions = new ArrayList<Auction>();
-            while (resultSet.next()) {
-                Long id = resultSet.getLong("id");
-                String subject = resultSet.getString("subject");
-                AuctionType auctionType = AuctionType.valueOf(resultSet.getString("auction_type"));
-                Integer price = resultSet.getInt("price");
-                AuctionDuration auctionDuration = AuctionDuration.valueOf(resultSet.getString("auction_duration"));
-                String ownerName = resultSet.getString("owner_name");
-                String winnerBidId = resultSet.getString("winner_bid_id");
-                AuctionStatus auctionStatus = AuctionStatus.valueOf(resultSet.getString("auction_status"));
-                Auction auction = new Auction(id, subject, auctionType, price, auctionDuration, ownerName, winnerBidId, auctionStatus);
-                auctions.add(auction);
-            }
-            return auctions;
-        } catch (SQLException exception) {
-            System.err.println(exception);
-            if (connection != null) {
-                try {
-                    System.err.print("Transaction is being rolled back");
-                    connection.rollback();
-                } catch (SQLException exp) {
-                    System.err.println(exp);
-                }
-            }
-            throw new RuntimeException("Reading the Auctions database operation failed");
-        }
+    public List<Auction> getAllAuctions() {
+        TypedQuery<AuctionEntity> list = em.createQuery("select t from " + AuctionEntity.class.getCanonicalName() + " t", AuctionEntity.class);
+        return list.getResultList().stream().map(this::transformEntityToObject).toList();
     }
 
-    public Long addAuction(Auction auction) {
+    public void addAuction(Auction auction) {
         try {
-            connection.setAutoCommit(false);
-            PreparedStatement statement = connection.prepareStatement("INSERT into auctions (subject, auction_type, price, auction_duration, owner_name, winner_bid_id, auction_status)" +
-                    "values ('" + auction.getSubject() + "', '" + auction.getType() + "', " + auction.getPrice() + ", '" + auction.getDuration() + "', '" + auction.getOwnerName() + "', " + null + ", '" + auction.getStatus() + "')", Statement.RETURN_GENERATED_KEYS);
-            statement.executeUpdate();
-            ResultSet keys = statement.getGeneratedKeys();
-            keys.next();
-            Long auctionId = keys.getLong(1);
-            connection.commit();
-            return auctionId;
-        } catch (SQLException exception) {
-            System.err.println(exception);
-            if (connection != null) {
-                try {
-                    System.err.print("Transaction is being rolled back");
-                    connection.rollback();
-                } catch (SQLException exp) {
-                    System.err.println(exp);
-                }
-            }
-            throw new RuntimeException("Auction persistence operation failed");
+            AuctionEntity auctionEntity = new AuctionEntity();
+            auctionEntity.setId(auction.getId());
+            auctionEntity.setSubject(auction.getSubject());
+            auctionEntity.setAuctionType(auction.getAuctionType());
+            auctionEntity.setPrice(auction.getPrice());
+            auctionEntity.setAuctionDuration(auction.getAuctionDuration());
+            auctionEntity.setOwnerName(auction.getOwnerName());
+            auctionEntity.setWinnerBidId(auction.getWinnerBidId());
+            auctionEntity.setAuctionStatus(auction.getAuctionStatus());
+
+            em.persist(auctionEntity);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
     public void deleteAuction(Long auctionId) {
-        try {
-            connection.setAutoCommit(false);
-            PreparedStatement statement = connection.prepareStatement("UPDATE Auctions set auction_status = '" + AuctionStatus.DELETED + "' where id ='" + auctionId + "';");
-            statement.executeUpdate();
-            connection.commit();
-        } catch (SQLException exception) {
-            System.err.println(exception);
-            if (connection != null) {
-                try {
-                    System.err.print("Transaction is being rolled back");
-                    connection.rollback();
-                } catch (SQLException exp) {
-                    System.err.println(exp);
-                }
-            }
-            throw new RuntimeException("Auction deletion operation failed");
-        }
+        AuctionEntity auctionEntity = transformObjectToEntity(getAuctionById(auctionId));
+        auctionEntity.setAuctionStatus(AuctionStatus.DELETED);
+        em.merge(auctionEntity);
     }
 
-    public void updateAuction(Long auctionId, Auction auction) {
-        try {
-            connection.setAutoCommit(false);
-            PreparedStatement statement = connection.prepareStatement("UPDATE Auctions set subject = '" + auction.getSubject() + "', " + "auction_type = '" + auction.getType() + "', "
-                    + "price = '" + auction.getPrice() + "', " + "auction_duration = '" + auction.getDuration() + "'" + "where id ='" + auctionId + "';");
-            statement.executeUpdate();
-            connection.commit();
-        } catch (SQLException exception) {
-            System.err.println(exception);
-            if (connection != null) {
-                try {
-                    System.err.print("Transaction is being rolled back");
-                    connection.rollback();
-                } catch (SQLException exp) {
-                    System.err.println(exp);
-                }
-            }
-            throw new RuntimeException("Auction update operation failed");
-        }
+    public void updateAuction(Auction auction) {
+        AuctionEntity auctionEntity = transformObjectToEntity(auction);
+        em.merge(auctionEntity);
     }
 
+    private Auction transformEntityToObject(AuctionEntity auctionEntity) {
+        return new Auction(auctionEntity.getId(), auctionEntity.getSubject(), auctionEntity.getAuctionType(), auctionEntity.getPrice(),
+                auctionEntity.getAuctionDuration(), auctionEntity.getOwnerName(), auctionEntity.getWinnerBidId(), auctionEntity.getAuctionStatus());
+    }
+
+    private AuctionEntity transformObjectToEntity(Auction auction) {
+        AuctionEntity auctionEntity = new AuctionEntity();
+        auctionEntity.setId(auction.getId());
+        auctionEntity.setSubject(auction.getSubject());
+        auctionEntity.setAuctionType(auction.getAuctionType());
+        auctionEntity.setPrice(auction.getPrice());
+        auctionEntity.setAuctionDuration(auction.getAuctionDuration());
+        auctionEntity.setOwnerName(auction.getOwnerName());
+        auctionEntity.setWinnerBidId(auction.getWinnerBidId());
+        auctionEntity.setAuctionStatus(auction.getAuctionStatus());
+
+        return auctionEntity;
+    }
 }

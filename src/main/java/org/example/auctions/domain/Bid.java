@@ -1,4 +1,4 @@
-package org.example.auctions.services;
+package org.example.auctions.domain;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
