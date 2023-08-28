@@ -1,4 +1,4 @@
-package org.example.auctions.services.types;
+package org.example.auctions.types;
 
 public enum AuctionDuration {
     H1,
