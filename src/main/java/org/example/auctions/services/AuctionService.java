@@ -1,11 +1,15 @@
 package org.example.auctions.services;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 
 import lombok.RequiredArgsConstructor;
 import org.example.auctions.domain.Auction;
+import org.example.auctions.domain.Bid;
 import org.example.auctions.repositories.AuctionRepository;
+import org.example.auctions.repositories.BidRepository;
 import org.example.auctions.types.AuctionDuration;
 import org.example.auctions.types.AuctionStatus;
 import org.example.auctions.types.AuctionType;
@@ -16,6 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AuctionService {
     private final AuctionRepository auctionRepository;
+
+    private final BidRepository bidRepository;
 
     @Transactional
     public List<Auction> getCollection() {
@@ -43,7 +49,9 @@ public class AuctionService {
             throw new RuntimeException("The auction has already been completed.");
         }
 
-        auctionRepository.deleteAuction(auctionId);
+        auction.delete();
+
+        auctionRepository.updateAuction(auction);
     }
 
     @Transactional
@@ -97,49 +105,50 @@ public class AuctionService {
 
         auction.complete();
 
+        determineAuctionWinner(auction);
+
         auctionRepository.updateAuction(auction);
     }
-//
-//    @Transactional
-//    public Bid createBid(String ownerName, Long auctionId, Integer amount) {
-//        Auction auction = auctionRepository.getAuctionById(auctionId);
-//        if (auction.getBids().size() == 0) {
-//            if (auction.getAuctionType() == AuctionType.INC && auction.getPrice() > amount) {
-//                throw new RuntimeException("The bid amount must be greater than the specified price.");
-//            }
-//            if (auction.getAuctionType() == AuctionType.DEC && auction.getPrice() < amount) {
-//                throw new RuntimeException("The bid amount must be less than the specified price.");
-//            }
-//        }
-//        else {
-//            if (auction.getAuctionType() == AuctionType.INC && auction.getBids().get(auction.getBids().size() - 1).getAmount() > amount) {
-//                throw new RuntimeException("The bid amount must be greater than the previous bid.");
-//            }
-//            if (auction.getAuctionType() == AuctionType.DEC && auction.getBids().get(auction.getBids().size() - 1).getAmount() < amount) {
-//                throw new RuntimeException("The bid amount must be less than the previous bid.");
-//            }
-//        }
-//        Bid bid = new Bid(ownerName, auctionId, amount);
-//        auction.getBids().add(bid);
-//        return bid;
-//    }
-//
-//    @Transactional
-//    public void cancelBid(Long auctionId, String bidId) {
-//        Auction auction = auctionRepository.getAuctionById(auctionId);
-//        ArrayList<Bid> bids = auction.getBids();
-//        int bidIndex = -1;
-//        for (int i = 0; i < bids.size(); i++) {
-//            if (Objects.equals(bids.get(i).getId(), bidId)) {
-//                bidIndex = i;
-//                break;
-//            }
-//        }
-//        if (bidIndex >= 0) {
-//            bids.remove(bidIndex);
-//        }
-//        else {
-//            throw new RuntimeException("There is no such Bid Id.");
-//        }
-//    }
+
+    @Transactional
+    public void determineAuctionWinner(Auction auction) {
+        List<Bid> bids = bidRepository.getBidsByAuctionId(auction.getId());
+        if (auction.getAuctionType() == AuctionType.INC) {
+            bids.stream().
+                    max(Comparator.comparingInt(Bid::getAmount)).
+                    ifPresent(winnerBid -> auction.setWinnerBidId(winnerBid.getId()));
+        }
+
+        if (auction.getAuctionType() == AuctionType.DEC) {
+            bids.stream()
+                    .min(Comparator.comparingInt(Bid::getAmount)).
+                    ifPresent(winnerBid -> auction.setWinnerBidId(winnerBid.getId()));
+        }
+    }
+
+    @Transactional
+    public void createBid(Long auctionId, String ownerName, Integer amount) {
+        Auction auction = auctionRepository.getAuctionById(auctionId);
+        List<Bid> bids = bidRepository.getBidsByAuctionId(auctionId);
+
+        Bid lastBid = bids.stream().max(Comparator.comparing(Bid::getCreatedAt)).orElse(null);
+
+        if (lastBid != null) {
+            if (lastBid.getAmount() >= amount && auction.getAuctionType() == AuctionType.INC) {
+                throw new RuntimeException("The bet must be better than the previous one.");
+            }
+
+            if (lastBid.getAmount() <= amount && auction.getAuctionType() == AuctionType.DEC) {
+                throw new RuntimeException("The bet must be better than the previous one.");
+            }
+        }
+
+        Bid bid = new Bid(auctionId, ownerName, amount);
+        bidRepository.addBid(bid);
+    }
+
+    @Transactional
+    public List<Bid> getBidsByAuctionId(Long auctionId) {
+        return bidRepository.getBidsByAuctionId(auctionId);
+    }
 }

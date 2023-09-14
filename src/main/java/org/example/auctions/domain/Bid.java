@@ -1,40 +1,33 @@
 package org.example.auctions.domain;
 
-import java.time.LocalDateTime;
-import java.util.UUID;
+import lombok.Getter;
+import lombok.Setter;
+import org.example.auctions.entity.BidEntity;
 
-public class Bid {
-    private final String id;
+import java.time.LocalDateTime;
+
+@Getter
+@Setter
+public class Bid extends BidEntity {
+    private final Long id;
     private final Long auctionId;
     private final String ownerName;
     private final Integer amount;
     private final LocalDateTime createdAt;
 
-    public Bid(String ownerName, Long auctionId, Integer amount) {
-        this.id = UUID.randomUUID().toString();
+    public Bid(Long auctionId, String ownerName, Integer amount) {
+        this.id = null;
         this.auctionId = auctionId;
         this.ownerName = ownerName;
         this.amount = amount;
         this.createdAt = LocalDateTime.now();
     }
 
-    public String getId() {
-        return id;
-    }
-
-    public String getOwnerName() {
-        return ownerName;
-    }
-
-    public Long getAuctionId() {
-        return auctionId;
-    }
-
-    public LocalDateTime getDuration() {
-        return createdAt;
-    }
-
-    public Integer getAmount() {
-        return amount;
+    public Bid(Long id, Long auctionId, String ownerName, Integer amount, LocalDateTime createdAt) {
+        this.id = id;
+        this.auctionId = auctionId;
+        this.ownerName = ownerName;
+        this.amount = amount;
+        this.createdAt = createdAt;
     }
 }

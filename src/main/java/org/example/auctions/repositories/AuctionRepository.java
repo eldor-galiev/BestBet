@@ -4,9 +4,8 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
 import lombok.AllArgsConstructor;
-import org.example.auctions.domain.entity.AuctionEntity;
+import org.example.auctions.entity.AuctionEntity;
 import org.example.auctions.domain.Auction;
-import org.example.auctions.types.AuctionStatus;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -16,7 +15,12 @@ import java.util.List;
 public class AuctionRepository{
 
     @PersistenceContext
-    protected EntityManager em;
+    private EntityManager em;
+
+    public List<Auction> getAllAuctions() {
+        TypedQuery<AuctionEntity> list = em.createQuery("select t from " + AuctionEntity.class.getCanonicalName() + " t order by t.id", AuctionEntity.class);
+        return list.getResultList().stream().map(this::transformEntityToObject).toList();
+    }
 
     public Auction getAuctionById(Long auctionId) {
         String sql = "select t from " + AuctionEntity.class.getCanonicalName() + " t where t.id = :id";
@@ -25,33 +29,12 @@ public class AuctionRepository{
         return list.getResultList().stream().map(this::transformEntityToObject).toList().get(0);
     }
 
-    public List<Auction> getAllAuctions() {
-        TypedQuery<AuctionEntity> list = em.createQuery("select t from " + AuctionEntity.class.getCanonicalName() + " t", AuctionEntity.class);
-        return list.getResultList().stream().map(this::transformEntityToObject).toList();
-    }
-
     public void addAuction(Auction auction) {
         try {
-            AuctionEntity auctionEntity = new AuctionEntity();
-            auctionEntity.setId(auction.getId());
-            auctionEntity.setSubject(auction.getSubject());
-            auctionEntity.setAuctionType(auction.getAuctionType());
-            auctionEntity.setPrice(auction.getPrice());
-            auctionEntity.setAuctionDuration(auction.getAuctionDuration());
-            auctionEntity.setOwnerName(auction.getOwnerName());
-            auctionEntity.setWinnerBidId(auction.getWinnerBidId());
-            auctionEntity.setAuctionStatus(auction.getAuctionStatus());
-
-            em.persist(auctionEntity);
+            em.persist(transformObjectToEntity(auction));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
-
-    public void deleteAuction(Long auctionId) {
-        AuctionEntity auctionEntity = transformObjectToEntity(getAuctionById(auctionId));
-        auctionEntity.setAuctionStatus(AuctionStatus.DELETED);
-        em.merge(auctionEntity);
     }
 
     public void updateAuction(Auction auction) {
@@ -66,6 +49,7 @@ public class AuctionRepository{
 
     private AuctionEntity transformObjectToEntity(Auction auction) {
         AuctionEntity auctionEntity = new AuctionEntity();
+
         auctionEntity.setId(auction.getId());
         auctionEntity.setSubject(auction.getSubject());
         auctionEntity.setAuctionType(auction.getAuctionType());

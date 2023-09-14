@@ -4,7 +4,7 @@ import java.util.*;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.example.auctions.domain.entity.AuctionEntity;
+import org.example.auctions.entity.AuctionEntity;
 import org.example.auctions.types.AuctionDuration;
 import org.example.auctions.types.AuctionStatus;
 import org.example.auctions.types.AuctionType;
@@ -29,17 +29,6 @@ public class Auction extends AuctionEntity {
         this.auctionDuration = auctionDuration;
         this.ownerName = ownerName;
         this.auctionStatus = AuctionStatus.UNPUBLISHED;
-    }
-
-    public Auction(Long id, Auction auction) {
-        this.id = id;
-        this.subject = auction.getSubject();
-        this.auctionType = auction.getAuctionType();
-        this.price = auction.getPrice();
-        this.auctionDuration = auction.getAuctionDuration();
-        this.ownerName = auction.getOwnerName();
-        this.winnerBidId = auction.getWinnerBidId();
-        this.auctionStatus = getAuctionStatus();
     }
 
     public Auction(Long id, String subject, AuctionType auctionType, Integer price, AuctionDuration auctionDuration, String ownerName, Long winnerBidId, AuctionStatus auctionStatus) {

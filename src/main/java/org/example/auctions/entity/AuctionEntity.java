@@ -1,4 +1,4 @@
-package org.example.auctions.domain.entity;
+package org.example.auctions.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;

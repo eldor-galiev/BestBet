@@ -2,6 +2,7 @@ package org.example.auctions.api;
 
 import lombok.RequiredArgsConstructor;
 import org.example.auctions.domain.Auction;
+import org.example.auctions.domain.Bid;
 import org.example.auctions.services.AuctionService;
 import org.example.auctions.types.AuctionDuration;
 import org.example.auctions.types.AuctionType;
@@ -18,11 +19,10 @@ public class AuctionApi {
 
     @PostMapping("/create")
     public void create(@RequestParam(value = "subject", required = false) String subject,
-                               @RequestParam(value = "auctionType", required = false) AuctionType auctionType,
-                               @RequestParam(value = "price", required = false) Integer price,
-                               @RequestParam(value = "auctionDuration", required = false) AuctionDuration auctionDuration,
-                               @RequestParam(value = "ownerName", required = false) String ownerName) {
-
+                       @RequestParam(value = "auctionType", required = false) AuctionType auctionType,
+                       @RequestParam(value = "price", required = false) Integer price,
+                       @RequestParam(value = "auctionDuration", required = false) AuctionDuration auctionDuration,
+                       @RequestParam(value = "ownerName", required = false) String ownerName) {
         service.createAuction(subject, auctionType, price, auctionDuration, ownerName);
     }
 
@@ -53,6 +53,18 @@ public class AuctionApi {
     @PostMapping("/complete")
     public void complete(@RequestParam(value = "id", required = false) Long auctionId) {
         service.completeAuction(auctionId);
+    }
+
+    @PostMapping("/bet")
+    public void makeBet(@RequestParam(value = "auctionId", required = false) Long auctionId,
+                        @RequestParam(value = "ownerName", required = false) String ownerName,
+                        @RequestParam(value = "amount", required = false) Integer amount) {
+        service.createBid(auctionId, ownerName, amount);
+    }
+
+    @GetMapping("/bids")
+    public List<Bid> getBids(@RequestParam(value = "auctionId", required = false) Long auctionId) {
+        return service.getBidsByAuctionId(auctionId);
     }
 
 }
